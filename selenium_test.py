@@ -1,3 +1,4 @@
+import argparse
 import json
 import time
 
@@ -6,17 +7,21 @@ from selenium.webdriver.common.by import By
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--username', help='Username for Alto', required=True)
+    parser.add_argument('-p', '--password', help='Password for Alto', required=True)
+    args = parser.parse_args()
     driver = webdriver.Chrome()
-    login_alto(driver)
+    login_alto(driver, args.username, args.password)
     driver.get("https://login.vebraalto.com/#home/enquiries")
-    time.sleep(5)
+    time.sleep(2)
     get_table_elements(driver)
     driver.close()
 
-def login_alto(driver):
+def login_alto(driver: webdriver, username: str, password: str):
     driver.get("https://login.vebraalto.com/sign-in")
-    driver.find_element(By.ID, "username").send_keys("info@residemanchester.com")
-    driver.find_element(By.ID, "password").send_keys("BA8pSJ^@sN%LmPbK")
+    driver.find_element(By.ID, "username").send_keys(username)
+    driver.find_element(By.ID, "password").send_keys(password)
     driver.find_element(By.NAME, "action").click()
     time.sleep(2)
 
