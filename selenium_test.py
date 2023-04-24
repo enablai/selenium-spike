@@ -27,6 +27,7 @@ def login_alto(driver: webdriver, username: str, password: str):
     driver.get("https://login.vebraalto.com/sign-in")
     driver.find_element(By.ID, "username").send_keys(username)
     driver.find_element(By.ID, "password").send_keys(password)
+    time.sleep(2)
     driver.find_element(By.NAME, "action").click()
     time.sleep(2)
 
