@@ -4,14 +4,19 @@ import time
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username', help='Username for Alto', required=True)
     parser.add_argument('-p', '--password', help='Password for Alto', required=True)
+    parser.add_argument('-s', '--silent', action='store_true', help='Run silent (headless)', default=False)
     args = parser.parse_args()
-    driver = webdriver.Chrome()
+    options = Options()
+    if args.silent:
+        options.add_argument("--headless")
+    driver = webdriver.Chrome(options=options)
     login_alto(driver, args.username, args.password)
     driver.get("https://login.vebraalto.com/#home/enquiries")
     time.sleep(2)
@@ -35,11 +40,31 @@ def get_table_elements(driver):
         if row.get_attribute("class") != "row":
             continue
         columns = row.find_elements(By.TAG_NAME, "td")
-        column_text = [column.text for column in columns]
+        column_text = []
+        for column in columns:
+            col_text = column.text
+            if col_text:
+                column_text.append(col_text)
+                continue
+            contained_images = column.find_elements(By.TAG_NAME, "img")
+            if contained_images:
+                img_title = contained_images[0].get_attribute("title")
+                if img_title:
+                    column_text.append(img_title)
+                    continue
+            contained_divs = column.find_elements(By.TAG_NAME, "div")
+            if contained_divs:
+                div_class = contained_divs[0].get_attribute("class")
+                if div_class:
+                    column_text.append(div_class.split(" ")[-1])
+                    continue
+            column_text.append("")
+
+        # column_text = [column.text for column in columns]
         table_elements.append(dict(zip(headers, column_text)))
 
-    with open("table.json", "w") as f:
-        json.dump({"table_elements":table_elements}, f, indent=4)
+    with open("enquiries.json", "w") as f:
+        json.dump({"enquiries":table_elements}, f, indent=4)
 
 
 
