@@ -3,8 +3,8 @@ import json
 import time
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 
 
 def main():
@@ -42,25 +42,19 @@ def get_table_elements(driver):
         columns = row.find_elements(By.TAG_NAME, "td")
         column_text = []
         for column in columns:
-            col_text = column.text
-            if col_text:
+            if col_text := column.text:
                 column_text.append(col_text)
                 continue
-            contained_images = column.find_elements(By.TAG_NAME, "img")
-            if contained_images:
-                img_title = contained_images[0].get_attribute("title")
-                if img_title:
+            if contained_images := column.find_elements(By.TAG_NAME, "img"):
+                if img_title := contained_images[0].get_attribute("title"):
                     column_text.append(img_title)
                     continue
-            contained_divs = column.find_elements(By.TAG_NAME, "div")
-            if contained_divs:
-                div_class = contained_divs[0].get_attribute("class")
-                if div_class:
+            if contained_divs := column.find_elements(By.TAG_NAME, "div"):
+                if div_class := contained_divs[0].get_attribute("class"):
                     column_text.append(div_class.split(" ")[-1])
                     continue
             column_text.append("")
 
-        # column_text = [column.text for column in columns]
         table_elements.append(dict(zip(headers, column_text)))
 
     with open("enquiries.json", "w") as f:
