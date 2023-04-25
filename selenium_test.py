@@ -19,7 +19,7 @@ def main():
     driver = webdriver.Chrome(options=options)
     login_alto(driver, args.username, args.password)
     driver.get("https://login.vebraalto.com/#home/enquiries")
-    time.sleep(2)
+    time.sleep(5)
     get_table_elements(driver)
     driver.close()
 
