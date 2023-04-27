@@ -43,12 +43,10 @@ class AltoWebScraper:
 
     def get_table_elements(self):
         self.wait_for_element_to_be_loaded(By.XPATH, "//*[@id='dashboard-leads-lead']/div/div/div[2]")
-        head = self.driver.find_element(By.TAG_NAME, "thead")
-        table_body = self.driver.find_element(By.TAG_NAME, "tbody")
-        table_headers = head.find_elements(By.TAG_NAME, "th")
+        table_headers = self.driver.find_element(By.TAG_NAME, "thead").find_elements(By.TAG_NAME, "th")
         headers = [header.text for header in table_headers]
+        rows = self.driver.find_element(By.TAG_NAME, "tbody").find_elements(By.TAG_NAME, "tr")
         logger.info(f"Headers: {headers}")
-        rows = table_body.find_elements(By.TAG_NAME, "tr")
         logger.info(f"Found {len(rows)} rows")
         logger.info("Getting row details...")
         table_elements = [self.get_row_details(row, headers) for row in rows if row.get_attribute("class") == "row"]
