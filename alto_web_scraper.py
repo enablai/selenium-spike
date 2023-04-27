@@ -16,9 +16,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+
 @attr.s
 class AltoWebScraper:
     driver = attr.ib()
+
     def login(self, username: str, password: str):
         self.driver.get("https://login.vebraalto.com/sign-in")
         self.wait_for_element_to_be_loaded(By.ID, "username")
@@ -31,7 +33,7 @@ class AltoWebScraper:
         self.driver.get("https://login.vebraalto.com/#home/enquiries")
         self.get_table_elements()
 
-    def wait_for_element_to_be_loaded(self,by_method: str, element: str, max_timeout: int = 10):
+    def wait_for_element_to_be_loaded(self, by_method: str, element: str, max_timeout: int = 10):
         logger.info(f"Waiting for {element} to be loaded by {by_method}")
         try:
             WebDriverWait(self.driver, max_timeout).until(EC.presence_of_element_located((by_method, element)))
@@ -39,13 +41,11 @@ class AltoWebScraper:
             logger.error(f"Element {element} was not loaded in {max_timeout} seconds")
             raise TimeoutException from e
 
-
-
     def get_table_elements(self):
         self.wait_for_element_to_be_loaded(By.XPATH, "//*[@id='dashboard-leads-lead']/div/div/div[2]")
-        head = self.driver.find_element(By.TAG_NAME, 'thead')
-        table_body = self.driver.find_element(By.TAG_NAME, 'tbody')
-        table_headers = head.find_elements(By.TAG_NAME, 'th')
+        head = self.driver.find_element(By.TAG_NAME, "thead")
+        table_body = self.driver.find_element(By.TAG_NAME, "tbody")
+        table_headers = head.find_elements(By.TAG_NAME, "th")
         headers = [header.text for header in table_headers]
         logger.info(f"Headers: {headers}")
         rows = table_body.find_elements(By.TAG_NAME, "tr")
@@ -53,7 +53,7 @@ class AltoWebScraper:
         logger.info("Getting row details...")
         table_elements = [self.get_row_details(row, headers) for row in rows if row.get_attribute("class") == "row"]
         with open("enquiries.json", "w") as f:
-            json.dump({"enquiries":table_elements}, f, indent=4)
+            json.dump({"enquiries": table_elements}, f, indent=4)
 
     def get_row_details(self, row, headers: list):
         columns = row.find_elements(By.TAG_NAME, "td")
@@ -76,11 +76,12 @@ class AltoWebScraper:
 
         return dict(zip(headers, column_text))
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--username', help='Username for Alto', required=True)
-    parser.add_argument('-p', '--password', help='Password for Alto', required=True)
-    parser.add_argument('-s', '--silent', action='store_true', help='Run silent (headless)', default=False)
+    parser.add_argument("-u", "--username", help="Username for Alto", required=True)
+    parser.add_argument("-p", "--password", help="Password for Alto", required=True)
+    parser.add_argument("-s", "--silent", action="store_true", help="Run silent (headless)", default=False)
     args = parser.parse_args()
     options = Options()
     if args.silent:
@@ -90,6 +91,6 @@ def main():
     alto_web_scraper.login(args.username, args.password)
     alto_web_scraper.get_all_enquiries()
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     main()
