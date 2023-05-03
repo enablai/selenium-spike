@@ -20,30 +20,42 @@ def clean_text(text: str) -> str:
     return re.sub(r"\s\s+", " ", text)
 
 
-def get_row_details(rows_locator: list[Locator], headers: list):
-    row_details = []
-    for row_locator in rows_locator:
-        print(row_locator.get_attribute("class"))
-        if row_locator.get_attribute("class") != "row":
-            continue
-        column_text = []
-        for column_locator in row_locator.locator("td").all():
-            if column_locator.locator("img").count() == 1:
-                column_text.append(column_locator.locator("img").first.get_attribute("title"))
-                continue
-            if column_locator.locator("div").count() == 1:
-                class_name = column_locator.locator("div").first.get_attribute("class")
-                if class_name is not None:
-                    column_text.append(class_name.split(" ")[-1])
-                continue
-            if (content := column_locator.text_content()) is not None:
-                column_text.append(clean_text(content))
-                continue
+def handle_extra_info_row(row_locator: Locator):
+    return {"extra_info": "extra_info"}
 
-            column_text.append("")
-        print(f"column_text: {len(column_text)}, headers: {len(headers)}")
-        row_details.append(dict(zip(headers, column_text)))
-    return row_details
+
+def handle_row(row_locator: Locator):
+    column_text = []
+    for column_locator in row_locator.locator("td").all():
+        if column_locator.locator("img").count() == 1:
+            column_text.append(column_locator.locator("img").first.get_attribute("title"))
+            continue
+        if column_locator.locator("div").count() == 1:
+            class_name = column_locator.locator("div").first.get_attribute("class")
+            if class_name is not None:
+                column_text.append(class_name.split(" ")[-1])
+            continue
+        if (content := column_locator.text_content()) is not None:
+            column_text.append(clean_text(content))
+            continue
+
+        column_text.append("")
+    return column_text
+
+
+def get_both_row_details(rows_locators: list[Locator], headers: list):
+    headers.append("extra_info")
+    chunked_list: list = split_list(rows_locators, 2)
+    all_row_details = []
+    for locators_list in chunked_list:
+        details = []
+        for row_locator in locators_list:
+            if row_locator.get_attribute("class") == "row":
+                details.extend(handle_row(row_locator))
+            if row_locator.get_attribute("class") == "extra-info-row hidden":
+                details.append(handle_extra_info_row(row_locator))
+        all_row_details.append(dict(zip(headers, details)))
+    return all_row_details
 
 
 def run(playwright: Playwright, username: str, password: str, silent: bool):
@@ -64,11 +76,16 @@ def run(playwright: Playwright, username: str, password: str, silent: bool):
                 continue
             table_headers_text.append(content)
     print(table_headers_text)
-    rows_locator = page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.body > table > tbody > tr").all()
-    row_details = get_row_details(rows_locator, table_headers_text)
+    rows_locators = page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.body > table > tbody > tr").all()
+    row_details = get_both_row_details(rows_locators=rows_locators, headers=table_headers_text)
     with open("enquiries.json", "w") as f:
         json.dump({"enquiries": row_details}, f, indent=4)
     browser.close()
+
+
+def split_list(input_list, n):
+    for i in range(0, len(input_list), n):
+        yield input_list[i : i + n]
 
 
 def main():
