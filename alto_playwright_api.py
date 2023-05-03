@@ -4,10 +4,11 @@ import logging
 import re
 from dataclasses import dataclass
 
+from attrs import define
 from playwright.sync_api import Locator, Page, sync_playwright
 
 
-@dataclass
+@define
 class AltoAPI:
     page: Page
 
