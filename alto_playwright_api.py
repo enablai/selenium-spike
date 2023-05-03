@@ -26,11 +26,11 @@ class AltoAPI:
     def get_all_enquiries(self):
         self.page.get_by_role("navigation").filter(has_text="Enquiries").click()
         self.page.wait_for_selector("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1")
-        table_headers = self.get_table_headers()
+        table_headers = self._get_enquiry_table_headers()
         rows_locators = self.page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.body > table > tbody > tr").all()
-        return self.get_both_row_details(rows_locators=rows_locators, headers=table_headers)
+        return self._get_enquiry_details(rows_locators=rows_locators, headers=table_headers)
 
-    def get_table_headers(self) -> list:
+    def _get_enquiry_table_headers(self) -> list:
         headers = []
         header_locators = self.page.locator(
             "#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.header > table > thead > tr > th"
@@ -38,7 +38,7 @@ class AltoAPI:
         for i, header in enumerate(header_locators):
             content = header.text_content()
             if content is not None:
-                content = self.clean_text(content)
+                content = self._clean_text(content)
                 if content == "":
                     headers.append(str(i))
                     continue
@@ -46,23 +46,23 @@ class AltoAPI:
         headers.append("extra_info")
         return headers
 
-    def get_both_row_details(self, rows_locators: list[Locator], headers: list):
+    def _get_enquiry_details(self, rows_locators: list[Locator], headers: list):
         headers.append("extra_info")
-        chunked_list: list = self.split_list(rows_locators, 2)
+        chunked_list: list = self._split_list(rows_locators, 2)
         all_row_details = []
         for locators_list in chunked_list:
             assert len(locators_list) == 2
             assert locators_list[0].get_attribute("class") == "row"
             assert locators_list[1].get_attribute("class") == "extra-info-row hidden"
-            details = self.handle_row(locators_list[0])
-            details.append(self.handle_extra_info_row(locators_list[1]))
+            details = self._handle_enquiries_row(locators_list[0])
+            details.append(self._handle_extra_info_row(locators_list[1]))
             all_row_details.append(dict(zip(headers, details)))
         return all_row_details
 
-    def handle_extra_info_row(self, row_locator: Locator):
+    def _handle_extra_info_row(self, row_locator: Locator):
         return {"extra_info": "extra_info"}
 
-    def handle_row(self, row_locator: Locator) -> list:
+    def _handle_enquiries_row(self, row_locator: Locator) -> list:
         column_text = []
         for column_locator in row_locator.locator("td").all():
             if column_locator.locator("img").count() == 1:
@@ -74,19 +74,19 @@ class AltoAPI:
                     column_text.append(class_name.split(" ")[-1])
                 continue
             if (content := column_locator.text_content()) is not None:
-                column_text.append(self.clean_text(content))
+                column_text.append(self._clean_text(content))
                 continue
 
             column_text.append("")
         return column_text
 
     @staticmethod
-    def clean_text(text: str) -> str:
+    def _clean_text(text: str) -> str:
         text = text.replace("\n", " ").strip()
         return re.sub(r"\s\s+", " ", text)
 
     @staticmethod
-    def split_list(input_list, n):
+    def _split_list(input_list, n):
         for i in range(0, len(input_list), n):
             yield input_list[i : i + n]
 
