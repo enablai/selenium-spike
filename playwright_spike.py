@@ -24,7 +24,7 @@ def handle_extra_info_row(row_locator: Locator):
     return {"extra_info": "extra_info"}
 
 
-def handle_row(row_locator: Locator):
+def handle_row(row_locator: Locator) -> list:
     column_text = []
     for column_locator in row_locator.locator("td").all():
         if column_locator.locator("img").count() == 1:
@@ -48,14 +48,28 @@ def get_both_row_details(rows_locators: list[Locator], headers: list):
     chunked_list: list = split_list(rows_locators, 2)
     all_row_details = []
     for locators_list in chunked_list:
-        details = []
-        for row_locator in locators_list:
-            if row_locator.get_attribute("class") == "row":
-                details.extend(handle_row(row_locator))
-            if row_locator.get_attribute("class") == "extra-info-row hidden":
-                details.append(handle_extra_info_row(row_locator))
+        assert len(locators_list) == 2
+        assert locators_list[0].get_attribute("class") == "row"
+        assert locators_list[1].get_attribute("class") == "extra-info-row hidden"
+        details = handle_row(locators_list[0])
+        details.append(handle_extra_info_row(locators_list[1]))
         all_row_details.append(dict(zip(headers, details)))
     return all_row_details
+
+
+def get_table_headers(page: Page) -> list:
+    headers = []
+    header_locators = page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.header > table > thead > tr > th").all()
+    for i, header in enumerate(header_locators):
+        content = header.text_content()
+        if content is not None:
+            content = clean_text(content)
+            if content == "":
+                headers.append(str(i))
+                continue
+            headers.append(content)
+    headers.append("extra_info")
+    return headers
 
 
 def run(playwright: Playwright, username: str, password: str, silent: bool):
@@ -65,19 +79,9 @@ def run(playwright: Playwright, username: str, password: str, silent: bool):
     login(page, username, password)
     page.get_by_role("navigation").filter(has_text="Enquiries").click()
     page.wait_for_selector("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1")
-    table_headers_text = []
-    header_locator = page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.header > table > thead > tr > th").all()
-    for i, header in enumerate(header_locator):
-        content = header.text_content()
-        if content is not None:
-            content = clean_text(content)
-            if content == "":
-                table_headers_text.append(str(i))
-                continue
-            table_headers_text.append(content)
-    print(table_headers_text)
+    table_headers = get_table_headers(page)
     rows_locators = page.locator("#dashboard-leads-lead > div > div > div.tablex.list.lead.mr1 > div.body > table > tbody > tr").all()
-    row_details = get_both_row_details(rows_locators=rows_locators, headers=table_headers_text)
+    row_details = get_both_row_details(rows_locators=rows_locators, headers=table_headers)
     with open("enquiries.json", "w") as f:
         json.dump({"enquiries": row_details}, f, indent=4)
     browser.close()
